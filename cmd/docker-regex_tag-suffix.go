@@ -4,13 +4,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DockerTagSuffixRegexCmd = &cobra.Command{
-	Use: "tag-suffix-regex",
+var DockerRegexTagSuffixCmd = &cobra.Command{
+	Use: "tag-suffix",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
 }
 
 func init() {
-	DockerCmd.AddCommand(DockerTagSuffixRegexCmd)
+	DockerRegexCmd.AddCommand(DockerRegexTagSuffixCmd)
 }

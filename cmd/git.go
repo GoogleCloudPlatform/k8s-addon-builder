@@ -4,14 +4,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DockerCmd = &cobra.Command{
-	Use:   "docker",
-	Short: "docker helper",
+var GitCmd = &cobra.Command{
+	Use:   "git",
+	Short: "git utility",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
 }
 
 func init() {
-	ColaCmd.AddCommand(DockerCmd)
+	PlyCmd.AddCommand(GitCmd)
 }

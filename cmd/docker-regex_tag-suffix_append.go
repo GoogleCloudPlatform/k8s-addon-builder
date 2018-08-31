@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DockerTagSuffixRegexAppend = &cobra.Command{
+var DockerRegexTagSuffixAppendCmd = &cobra.Command{
 	Use:  "append <REGEX> <TAG_SUFFIX>",
 	Args: cobra.ExactArgs(2),
 	RunE: appendTagSuffixWrapper,
 }
 
 func init() {
-	DockerTagSuffixRegexCmd.AddCommand(DockerTagSuffixRegexAppend)
+	DockerRegexTagSuffixCmd.AddCommand(DockerRegexTagSuffixAppendCmd)
 }
 
 func appendTagSuffixWrapper(cmd *cobra.Command, args []string) error {

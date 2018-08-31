@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# pylint: disable=missing-docstring,invalid-name
+from __future__ import print_function
+
+import argparse
+import json
+import re
+import requests
+import sys
+
+import git
+
+def parse_github_url(url):
+    m = re.match("^https://github.com/([^/]+)/([^/]+)", url)
+    if m:
+        return m.group(1), m.group(2)
+    raise ValueError("parse error: GitHub URL '{}'".format(url))
+
+def parse_github_pr(repo, pr_id):
+    gh_owner, gh_repo = parse_github_url(repo)
+    r = requests.get("https://api.github.com/repos/{}/{}/pulls/{}".format(
+        gh_owner, gh_repo, pr_id))
+    return r.json()
+
+def set_git_identity(repo):
+    with repo.config_writer() as cw:
+        cw.set_value("user", "email", "<>")
+        cw.set_value("user", "name", "addon-builder")
+
+def apply_github_pr(repo, args):
+    pr_id = args.pr_merge or args.pr_rebase
+    pr = parse_github_pr(args.REPO, pr_id)
+    pr_source = pr["head"]["repo"]["full_name"]
+    pr_dest = pr["base"]["ref"]
+    dest_ref = "origin/{}".format(pr_dest)
+
+    set_git_identity(repo)
+    fetch_github_pr(repo, pr_id)
+
+    if args.pr_rebase:
+        repo.git.checkout("FETCH_HEAD")
+        repo.git.rebase(dest_ref)
+    else:
+        repo.git.checkout(dest_ref)
+        merge_msg = "Merge GitHub pull request #{} from {}".format(
+            args.pr_merge, pr_source)
+        repo.git.merge("FETCH_HEAD", "-m", merge_msg, "--log")
+
+def fetch_github_pr(repo, pr_number):
+    repo.remote().fetch(refspec="pull/{}/head".format(pr_number))
+
+def checkout_github_pr(repo, args):
+    fetch_github_pr(repo, args.rev_from_pr)
+    repo.git.checkout("FETCH_HEAD")
+
+def checkout(args):
+    if args.dir:
+        folder = args.dir
+    else:
+        folder = repo_folder(args)
+    repo = git.Repo.clone_from(
+        args.REPO,
+        folder)
+
+    # Checkout the desired revision. By default, the cloned state is the
+    # revision ("master" branch in most cases).
+    if args.rev_from_pr:
+        checkout_github_pr(repo, args)
+    elif args.rev:
+        repo.git.checkout(args.rev)
+
+    # Optionally apply any patches.
+    if args.pr_merge or args.pr_rebase:
+        if args.rev_from_pr:
+            raise ValueError("cannot specify both --pr-{merge,rebase} and --rev-from-pr")
+        apply_github_pr(repo, args)
+
+def repo_folder(args):
+    folder = args.REPO.split("/")[-1]
+    if args.dir:
+        folder = args.dir
+    elif "https://github.com" in args.REPO:
+        folder = re.sub(r"\.git$", "", folder)
+    return folder
+
+def parse_cli_args(args):
+    parser = argparse.ArgumentParser(description="checkout a git repository")
+    parser.add_argument("REPO", type=str, help="the Git repository to clone")
+    parser.add_argument("--dir", type=str, help="directory to clone into (optional)")
+    parser.add_argument("--rev", type=str, help="revision to checkout (optional)")
+    parser.add_argument(
+        "--rev-from-pr",
+        type=int,
+        metavar="PR_NUMBER",
+        help="instead of merging or rebasing a PR to its destination branch, checkout the PR itself; this overrides --rev")
+    parser.add_argument(
+        "--pr-merge",
+        type=int,
+        metavar="PR_NUMBER",
+        help="Github pull request to apply (merge)")
+    parser.add_argument(
+        "--pr-rebase",
+        type=int,
+        metavar="PR_NUMBER",
+        help="like --pr-merge, but instead of merging, rebase the PR on top of the destination branch")
+    return parser.parse_args(args)
+
+def main():
+    args = parse_cli_args(sys.argv[1:])
+
+    checkout(args)
+
+if __name__ == "__main__":
+    main()

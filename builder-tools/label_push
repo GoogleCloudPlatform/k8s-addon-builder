@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -ex
+
+# shellcheck disable=SC1090
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+label_and_push_images_gcb "$@"

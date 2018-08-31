@@ -9,20 +9,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DockerImagesRegexCmd = &cobra.Command{
-	Use:  "images-regex <REGEX>",
+var DockerRegexImagesCmd = &cobra.Command{
+	Use:  "images <REGEX>",
 	Args: cobra.ExactArgs(1),
 	RunE: listImages,
 }
 
 func init() {
-	DockerCmd.AddCommand(DockerImagesRegexCmd)
+	DockerRegexCmd.AddCommand(DockerRegexImagesCmd)
 }
 
 func listImages(cmd *cobra.Command, args []string) error {
 	regex := args[0]
 	if regex == "" {
-		//		cmd.Help()
 		return fmt.Errorf("REGEX cannot be empty")
 	}
 	r, err := regexp.Compile(regex)

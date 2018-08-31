@@ -3,33 +3,24 @@ package cmd
 import (
 	"fmt"
 	"os/exec"
-	"regexp"
 
 	abd "github.com/GoogleCloudPlatform/addon-builder/pkg"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
-var DockerPushRegexCmd = &cobra.Command{
-	Use:  "push-regex <REGEX>",
+var DockerRegexPushCmd = &cobra.Command{
+	Use:  "push <REGEX>",
 	Args: cobra.ExactArgs(1),
 	RunE: pushWrapper,
 }
 
 func init() {
-	DockerCmd.AddCommand(DockerPushRegexCmd)
+	DockerRegexCmd.AddCommand(DockerRegexPushCmd)
 }
 
 func pushWrapper(cmd *cobra.Command, args []string) error {
-	regex := args[0]
-	if regex == "" {
-		//		cmd.Help()
-		return fmt.Errorf("REGEX cannot be empty")
-	}
-	r, err := regexp.Compile(regex)
-	if err != nil {
-		return err
-	}
+	r, err := abd.MakeRegex(args[0])
 
 	dcli, err := client.NewEnvClient()
 	if err != nil {
@@ -40,19 +31,17 @@ func pushWrapper(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return pushImages(dcli, found)
+	return pushImages(found)
 }
 
-func pushImages(dcli *client.Client, images abd.ImageMap) error {
+func pushImages(images abd.ImageMap) error {
 	if len(images) == 0 {
 		fmt.Println("No images to push")
 		return nil
 	}
 
 	fmt.Println("Images to push:")
-	for k, _ := range images {
-		fmt.Printf("  - %v\n", k)
-	}
+	images.ShowPretty()
 
 	for k, _ := range images {
 		cmd := exec.Command("docker", "push", k)

@@ -33,6 +33,12 @@
   name = "github.com/spf13/cobra"
   version = "0.0.3"
 
+# See https://github.com/golang/dep/issues/1890#issuecomment-404036309.
+[[override]]
+  name = "github.com/docker/distribution"
+  revision = "245ca4659e09e9745f3cc1217bf56e946509220c" # API v1.32
+  source = "https://github.com/docker/distribution"
+
 [prune]
   go-tests = true
   unused-packages = true

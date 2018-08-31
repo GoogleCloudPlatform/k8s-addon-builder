@@ -1,0 +1,27 @@
+substitutions:
+  _GO_IMAGE: "gcr.io/cloud-builders/go:debian"
+  _FILES: "."
+  _REGISTRY: 'gcr.io/$PROJECT_ID'
+
+steps:
+- name: gcr.io/cloud-builders/docker
+  entrypoint: bash
+  env:
+  - "BUILD_ID=$BUILD_ID"
+  - "PROJECT_ID=$PROJECT_ID"
+  args:
+  - -c
+  - |
+    set -ex
+    # Addon builder files are inside a directory in the repository
+    # We don't need to move when we use gbuild and upload the code
+    cd ${_FILES}
+    # The LABEL fields here are for debugging information/build provenance.
+    docker build \
+      --build-arg GO_IMAGE=${_GO_IMAGE} \
+      --label "GCB_BUILD_ID=$BUILD_ID" \
+      --label "GCB_PROJECT_ID=$PROJECT_ID" \
+      -t ${_REGISTRY}/addon-builder .
+
+images:
+- '${_REGISTRY}/addon-builder'

@@ -18,15 +18,15 @@
   version = "v1.0.6"
 
 [[projects]]
-  branch = "docker/1.13"
-  digest = "1:6b5297ed2caa15361468ddbb4add02a8498b2c1082c3ac0a7eb0dde01f13428a"
+  digest = "1:aa162628b5e09f23a012ad3884b9f3d7ba7b8fd01ccc22fa3434f7e6f41c160f"
   name = "github.com/docker/distribution"
   packages = [
-    "digest",
+    "digestset",
     "reference",
   ]
   pruneopts = "UT"
-  revision = "28602af35aceda2f8d571bad7ca37a54cf0250bc"
+  revision = "245ca4659e09e9745f3cc1217bf56e946509220c"
+  source = "https://github.com/docker/distribution"
 
 [[projects]]
   digest = "1:c4c7064c2c67a0a00815918bae489dd62cd88d859d24c95115d69b00b3d33334"
@@ -79,6 +79,14 @@
   pruneopts = "UT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  digest = "1:ee4d4af67d93cc7644157882329023ce9a7bcfce956a079069a9405521c7cc8d"
+  name = "github.com/opencontainers/go-digest"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
+  version = "v1.0.0-rc1"
 
 [[projects]]
   digest = "1:38ee335aedf4626620f3cf8f605661e71abdcce7b40b38921962beb3980f0a20"
@@ -147,6 +155,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/docker/distribution/reference",
     "github.com/docker/docker/api/types",
     "github.com/docker/docker/client",
     "github.com/spf13/cobra",

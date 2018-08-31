@@ -1,9 +1,14 @@
 package docker
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -12,30 +17,26 @@ import (
 )
 
 func EditTagSuffixWrapper(cmd *cobra.Command, args []string, appendOrRemove bool) error {
-	regex := args[0]
 	tagSuffix := args[1]
 
-	if regex == "" {
-		return fmt.Errorf("REGEX cannot be empty")
-	}
 	if tagSuffix == "" {
 		return fmt.Errorf("TAG_SUFFIX cannot be empty")
 	}
 
-	r, err := regexp.Compile(regex)
+	r, err := MakeRegex(args[0])
 	if err != nil {
 		return err
 	}
 
-	cli, err := client.NewEnvClient()
+	dcli, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}
 
-	return editTagSuffix(cli, tagSuffix, appendOrRemove, r)
+	return editTagSuffix(dcli, tagSuffix, appendOrRemove, r)
 }
 
-func getImageAndTag(repoTag string) (string, string, error) {
+func GetImageAndTag(repoTag string) (string, string, error) {
 	imageAndTag := strings.Split(repoTag, ":")
 	if len(imageAndTag) != 2 {
 		return "", "", fmt.Errorf("divisor ':' not found in RepoTag %v", repoTag)
@@ -49,7 +50,7 @@ func getImageAndTag(repoTag string) (string, string, error) {
 //
 // [1]: https://docs.docker.com/engine/reference/commandline/tag/
 func isValidTag(tag string) bool {
-	r, _ := regexp.Compile("^[a-zA-Z0-9_][a-zA-Z0-9_.-]+$")
+	r, _ := MakeRegex("^[a-zA-Z0-9_][a-zA-Z0-9_.-]+$")
 	if !r.MatchString(tag) {
 		return false
 	}
@@ -59,8 +60,8 @@ func isValidTag(tag string) bool {
 	return true
 }
 
-func repoTagExists(cli *client.Client, needle string) bool {
-	images, err := cli.ImageList(context.Background(), types.ImageListOptions{All: true})
+func repoTagExists(dcli *client.Client, needle string) bool {
+	images, err := dcli.ImageList(context.Background(), types.ImageListOptions{All: true})
 	if err != nil {
 		return false
 	}
@@ -76,13 +77,13 @@ func repoTagExists(cli *client.Client, needle string) bool {
 	return false
 }
 
-type tagOp struct {
-	from string
-	to   string
+type TagOp struct {
+	From string
+	To   string
 }
 
-func appendTag(tagOps []tagOp, cli *client.Client, tagSuffix string, repoTag string) ([]tagOp, error) {
-	imageName, tag, err := getImageAndTag(repoTag)
+func appendTag(tagOps []TagOp, dcli *client.Client, tagSuffix string, repoTag string) ([]TagOp, error) {
+	imageName, tag, err := GetImageAndTag(repoTag)
 	if err != nil {
 		return tagOps, err
 	}
@@ -102,16 +103,16 @@ func appendTag(tagOps []tagOp, cli *client.Client, tagSuffix string, repoTag str
 		return tagOps, fmt.Errorf("new tag %v is invalid", newTag)
 	}
 	var newRepoTag string = imageName + ":" + newTag
-	if repoTagExists(cli, newRepoTag) {
+	if repoTagExists(dcli, newRepoTag) {
 		fmt.Printf("skipping %v (already suffixed to '-%v')\n", repoTag, tagSuffix)
 		return tagOps, nil
 	}
-	tagOps = append(tagOps, tagOp{repoTag, newRepoTag})
+	tagOps = append(tagOps, TagOp{repoTag, newRepoTag})
 	return tagOps, nil
 }
 
-func removeTag(tagOps []tagOp, cli *client.Client, tagSuffix string, repoTag string) ([]tagOp, error) {
-	imageName, tag, err := getImageAndTag(repoTag)
+func removeTag(tagOps []TagOp, dcli *client.Client, tagSuffix string, repoTag string) ([]TagOp, error) {
+	imageName, tag, err := GetImageAndTag(repoTag)
 	if err != nil {
 		return tagOps, err
 	}
@@ -121,17 +122,17 @@ func removeTag(tagOps []tagOp, cli *client.Client, tagSuffix string, repoTag str
 		fmt.Printf("skipping %v (suffix '-%v' not found)\n", repoTag, tagSuffix)
 		return tagOps, nil
 	}
-	tagOps = append(tagOps, tagOp{repoTag, newRepoTag})
+	tagOps = append(tagOps, TagOp{repoTag, newRepoTag})
 	return tagOps, nil
 }
 
-func mkTaggingOperations(cli *client.Client, tagSuffix string, r *regexp.Regexp, appendOrRemove bool) ([]tagOp, error) {
-	images, err := FindImages(cli, r)
+func mkTaggingOperations(dcli *client.Client, tagSuffix string, r *regexp.Regexp, appendOrRemove bool) ([]TagOp, error) {
+	images, err := FindImages(dcli, r)
 	if err != nil {
 		return nil, err
 	}
 
-	tagOps := make([]tagOp, 0)
+	tagOps := make([]TagOp, 0)
 	for _, image := range images {
 		// Skip untagged (dangling) images.
 		if image.RepoTags[0] == "<none>:<none>" {
@@ -142,9 +143,9 @@ func mkTaggingOperations(cli *client.Client, tagSuffix string, r *regexp.Regexp,
 				continue
 			}
 			if appendOrRemove {
-				tagOps, err = appendTag(tagOps, cli, tagSuffix, repoTag)
+				tagOps, err = appendTag(tagOps, dcli, tagSuffix, repoTag)
 			} else {
-				tagOps, err = removeTag(tagOps, cli, tagSuffix, repoTag)
+				tagOps, err = removeTag(tagOps, dcli, tagSuffix, repoTag)
 			}
 			if err != nil {
 				return nil, err
@@ -155,8 +156,8 @@ func mkTaggingOperations(cli *client.Client, tagSuffix string, r *regexp.Regexp,
 	return tagOps, nil
 }
 
-func editTagSuffix(cli *client.Client, tagSuffix string, appendOrRemove bool, r *regexp.Regexp) error {
-	ops, err := mkTaggingOperations(cli, tagSuffix, r, appendOrRemove)
+func editTagSuffix(dcli *client.Client, tagSuffix string, appendOrRemove bool, r *regexp.Regexp) error {
+	ops, err := mkTaggingOperations(dcli, tagSuffix, r, appendOrRemove)
 	if err != nil {
 		return err
 	}
@@ -167,24 +168,28 @@ func editTagSuffix(cli *client.Client, tagSuffix string, appendOrRemove bool, r 
 	}
 
 	for _, op := range ops {
-		err := cli.ImageTag(context.Background(), op.from, op.to)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("tagged from:%v\n         to:%v\n", op.from, op.to)
-
-		responses, err := cli.ImageRemove(context.Background(), op.from, types.ImageRemoveOptions{})
-		for _, res := range responses {
-			if len(res.Deleted) > 0 {
-				fmt.Printf("deleted: %v\n", res.Deleted)
-			}
-			if len(res.Untagged) > 0 {
-				fmt.Printf("untagged: %v\n", res.Untagged)
-			}
-		}
-
+		return MoveTag(dcli, op)
 	}
 
+	return nil
+}
+
+func MoveTag(dcli *client.Client, tagOp TagOp) error {
+	err := dcli.ImageTag(context.Background(), tagOp.From, tagOp.To)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("tagged from:%v\n         to:%v\n", tagOp.From, tagOp.To)
+
+	responses, err := dcli.ImageRemove(context.Background(), tagOp.From, types.ImageRemoveOptions{})
+	for _, res := range responses {
+		if len(res.Deleted) > 0 {
+			fmt.Printf("deleted: %v\n", res.Deleted)
+		}
+		if len(res.Untagged) > 0 {
+			fmt.Printf("untagged: %v\n", res.Untagged)
+		}
+	}
 	return nil
 }
 
@@ -209,4 +214,90 @@ func FindImages(dcli *client.Client, r *regexp.Regexp) (ImageMap, error) {
 	}
 
 	return found, nil
+}
+
+func BuildImage(dcli *client.Client, dockerFileContents []byte, labels map[string]string, tags []string) error {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	tarHeader := &tar.Header{
+		Name: "Dockerfile",
+		Size: int64(len(dockerFileContents)),
+	}
+	err := tw.WriteHeader(tarHeader)
+	if err != nil {
+		return err
+	}
+	_, err = tw.Write(dockerFileContents)
+	if err != nil {
+		return err
+	}
+	dockerFileTarReader := bytes.NewReader(buf.Bytes())
+	ctx := context.Background()
+
+	imageBuildResponse, err := dcli.ImageBuild(
+		ctx,
+		dockerFileTarReader,
+		types.ImageBuildOptions{
+			Context: dockerFileTarReader,
+			Labels:  labels,
+			Tags:    tags,
+			// Remove: whether to remove the intermediate container used during
+			// the build.
+			Remove: true})
+	if err != nil {
+		return err
+	}
+
+	err = PrintStream(ctx, imageBuildResponse.Body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type TextStream struct {
+	Stream string `json:"stream"`
+}
+
+func PrintStream(ctx context.Context, stream io.ReadCloser) error {
+	decoder := json.NewDecoder(stream)
+	var s TextStream
+	for {
+		select {
+		case <-ctx.Done():
+			stream.Close()
+			return nil
+		default:
+			if err := decoder.Decode(&s); err == io.EOF {
+				return nil
+			} else if err != nil {
+				return err
+			}
+		}
+		fmt.Print(s.Stream)
+	}
+}
+
+func MakeRegex(regex string) (*regexp.Regexp, error) {
+	if regex == "" {
+		return nil, fmt.Errorf("REGEX cannot be empty")
+	}
+	return regexp.Compile(regex)
+}
+
+func (images ImageMap) SortedNames() []string {
+	imageNames := make([]string, 0)
+	for imageName, _ := range images {
+		imageNames = append(imageNames, imageName)
+	}
+	sort.Strings(imageNames)
+	return imageNames
+}
+
+func (images ImageMap) ShowPretty() {
+	for _, imageName := range images.SortedNames() {
+		fmt.Printf("  - %v\n", imageName)
+	}
 }

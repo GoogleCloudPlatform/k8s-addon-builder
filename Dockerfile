@@ -1,13 +1,59 @@
-# Compile Go binary statically.
-FROM k8s.gcr.io/addon-builder as builder
+ARG GO_IMAGE=gcr.io/cloud-builders/go:debian
+FROM $GO_IMAGE as go
+
+FROM gcr.io/cloud-builders/docker
+ARG GOPATH=/workspace/go
+ARG GOROOT=/usr/local/go
+
+ENV GOPATH ${GOPATH}
+ENV GOROOT ${GOROOT}
+
+RUN mkdir -pv \
+  /addon-builder \
+  /builder \
+  "${GOPATH}"
+
+# Inject Golang.
+COPY --from=go $GOROOT $GOROOT
+
+ENV PATH="/addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+
+# Compile "ply" binary statically.
 WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/addon-builder
 COPY / ./
-RUN dep ensure \
-  && make build-static
 
-# Extract static binary into scratch image. It could be any other x86 arch
-# image.
-FROM k8s.gcr.io/addon-builder
-ENV PATH="/:${PATH}"
-# Copy in entrypoint binaries into the toplevel root folder.
-COPY --from=builder /workspace/go/src/github.com/GoogleCloudPlatform/addon-builder/cola /
+RUN \
+  # Install common build tools.
+  apt-get update \
+  && apt-get install -y --no-install-recommends \
+  build-essential \
+  git \
+  make \
+  wget \
+  python-pip \
+  python-yaml \
+  # Install ply (Golang).
+  && go get -v github.com/golang/dep/cmd/dep \
+  && dep ensure \
+  && make build-static \
+  && cp ply builder-tools/* /addon-builder \
+  && ls -alhs /workspace/go/bin \
+  && ls -alhs /workspace/go/pkg \
+  && ls -alhs /workspace/go/src \
+  && ls -alhs \
+  # Install Python tools.
+  && pip install -r /addon-builder/requirements.txt \
+  && git config --system credential.helper gcloud.sh \
+  && wget -qO- https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar zxv -C /builder \
+  && CLOUDSDK_PYTHON="python2.7" /builder/google-cloud-sdk/install.sh \
+    --usage-reporting=false \
+    --bash-completion=false \
+    --disable-installation-options \
+  # Clean up.
+  && rm -rf \
+    /workspace/go/src \
+    /var/lib/apt/lists/* \
+    ~/.config/gcloud
+
+# Parent image's entrypoint is docker, reset it to minimize confusion.
+ENTRYPOINT []
