@@ -10,4 +10,4 @@ RUN dep ensure \
 FROM k8s.gcr.io/addon-builder
 ENV PATH="/:${PATH}"
 # Copy in entrypoint binaries into the toplevel root folder.
-COPY --from=builder /workspace/go/src/github.com/GoogleCloudPlatform/addon-builder/cmd/cola /
+COPY --from=builder /workspace/go/src/github.com/GoogleCloudPlatform/addon-builder/cola /

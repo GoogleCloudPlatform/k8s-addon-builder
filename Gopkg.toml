@@ -26,12 +26,12 @@
 
 
 [[constraint]]
-  name = "github.com/docker/cli"
-  version = "18.9.0-ce-tp5"
+  name = "github.com/docker/docker"
+  version = "1.13.1"
 
 [[constraint]]
-  name = "github.com/urfave/cli"
-  version = "1.20.0"
+  name = "github.com/spf13/cobra"
+  version = "0.0.3"
 
 [prune]
   go-tests = true

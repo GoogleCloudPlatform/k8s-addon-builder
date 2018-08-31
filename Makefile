@@ -4,20 +4,25 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOPATH?=$(HOME)/go
-BINARY_PATH_COLA=$(GOPATH)/src/github.com/GoogleCloudPlatform/addon-builder/cmd/cola
+BINARY_PATH_COLA=$(GOPATH)/src/github.com/GoogleCloudPlatform/addon-builder/cola
 REGISTRY?=gcr.io/gke-release-staging
+VERSION_GIT=$(shell git describe --always --dirty --long)
+VERSION_DATE=$(shell date -u +%Y-%m-%dT%I:%M:%S%z)
+LDFLAGS=-X github.com/GoogleCloudPlatform/addon-builder/cmd.VersionDate=${VERSION_DATE}
+LDFLAGS+=-X github.com/GoogleCloudPlatform/addon-builder/cmd.VersionGit=${VERSION_GIT}
+LDFLAGS+=-s
 
 all: test build
-cola:
-	cd cmd && $(GOBUILD) -o $(BINARY_PATH_COLA) -v cola.go
-cola-static:
-	cd cmd && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a \
-		-ldflags "-X main.VersionDate=`date -u +%Y-%m-%dT%I:%M:%S%z` -X main.VersionGit=`git describe --always --dirty --long` -s" \
+build:
+	$(GOBUILD) \
+	-ldflags "$(LDFLAGS)" \
+	-o $(BINARY_PATH_COLA) -v main.go
+build-static:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a \
+		-ldflags "$(LDFLAGS)" \
 		-o $(BINARY_PATH_COLA) \
 		-v \
-		cola.go
-build: cola
-build-static: cola-static
+		main.go
 docker-image:
 	docker build -t $(REGISTRY)/addon-builder-tools:latest .
 test:
