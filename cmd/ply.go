@@ -24,7 +24,7 @@ import (
 // PlyCmd represents the base command when called without any subcommands
 var PlyCmd = &cobra.Command{
 	Use:   "ply",
-	Short: "utility for addon-builder",
+	Short: "utility for k8s-addon-builder",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

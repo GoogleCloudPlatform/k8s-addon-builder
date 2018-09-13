@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	abd "github.com/GoogleCloudPlatform/addon-builder/pkg"
+	abd "github.com/GoogleCloudPlatform/k8s-addon-builder/pkg"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )

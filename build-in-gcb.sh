@@ -27,5 +27,5 @@ subs="--substitutions=$(IFS=, eval 'echo "${subs[*]}"')"
 
 gcloud container builds submit \
   "${subs:-}" \
-  --config addon-builder.cloudbuild.yaml \
+  --config k8s-addon-builder.cloudbuild.yaml \
   .

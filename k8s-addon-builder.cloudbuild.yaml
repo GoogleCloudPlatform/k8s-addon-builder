@@ -35,7 +35,7 @@ steps:
       --build-arg GO_IMAGE=${_GO_IMAGE} \
       --label "GCB_BUILD_ID=$BUILD_ID" \
       --label "GCB_PROJECT_ID=$PROJECT_ID" \
-      -t ${_REGISTRY}/addon-builder .
+      -t ${_REGISTRY}/k8s-addon-builder .
 
 images:
-- '${_REGISTRY}/addon-builder'
+- '${_REGISTRY}/k8s-addon-builder'

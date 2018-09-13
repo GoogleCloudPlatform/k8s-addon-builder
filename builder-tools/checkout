@@ -40,7 +40,7 @@ def parse_github_pr(repo, pr_id):
 def set_git_identity(repo):
     with repo.config_writer() as cw:
         cw.set_value("user", "email", "<>")
-        cw.set_value("user", "name", "addon-builder")
+        cw.set_value("user", "name", "k8s-addon-builder")
 
 def apply_github_pr(repo, args):
     pr_id = args.pr_merge or args.pr_rebase

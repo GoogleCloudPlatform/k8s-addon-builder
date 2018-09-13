@@ -4,12 +4,12 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOPATH?=$(HOME)/go
-BINARY_PATH_COLA=$(GOPATH)/src/github.com/GoogleCloudPlatform/addon-builder/ply
+BINARY_PATH_COLA=$(GOPATH)/src/github.com/GoogleCloudPlatform/k8s-addon-builder/ply
 REGISTRY?=gcr.io/gke-release-staging
 VERSION_GIT=$(shell git describe --always --dirty --long)
 VERSION_DATE=$(shell date -u +%Y-%m-%dT%I:%M:%S%z)
-LDFLAGS=-X github.com/GoogleCloudPlatform/addon-builder/cmd.VersionDate=${VERSION_DATE}
-LDFLAGS+=-X github.com/GoogleCloudPlatform/addon-builder/cmd.VersionGit=${VERSION_GIT}
+LDFLAGS=-X github.com/GoogleCloudPlatform/k8s-addon-builder/cmd.VersionDate=${VERSION_DATE}
+LDFLAGS+=-X github.com/GoogleCloudPlatform/k8s-addon-builder/cmd.VersionGit=${VERSION_GIT}
 LDFLAGS+=-s
 
 all: test build
@@ -24,7 +24,7 @@ build-static:
 		-v \
 		main.go
 docker-image:
-	docker build -t $(REGISTRY)/addon-builder:latest .
+	docker build -t $(REGISTRY)/k8s-addon-builder:latest .
 test:
 	$(GOTEST) -v ./...
 clean:

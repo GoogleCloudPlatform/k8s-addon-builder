@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	abd "github.com/GoogleCloudPlatform/addon-builder/pkg"
+	abd "github.com/GoogleCloudPlatform/k8s-addon-builder/pkg"
 
 	"github.com/spf13/cobra"
 )

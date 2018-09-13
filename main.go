@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/GoogleCloudPlatform/addon-builder/cmd"
+	"github.com/GoogleCloudPlatform/k8s-addon-builder/cmd"
 )
 
 func main() {

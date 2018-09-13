@@ -9,17 +9,17 @@ ENV GOPATH ${GOPATH}
 ENV GOROOT ${GOROOT}
 
 RUN mkdir -pv \
-  /addon-builder \
+  /k8s-addon-builder \
   /builder \
   "${GOPATH}"
 
 # Inject Golang.
 COPY --from=go $GOROOT $GOROOT
 
-ENV PATH="/addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${PATH}"
 
 # Compile "ply" binary statically.
-WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/addon-builder
+WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder
 COPY / ./
 
 RUN \
@@ -36,13 +36,13 @@ RUN \
   && go get -v github.com/golang/dep/cmd/dep \
   && dep ensure \
   && make build-static \
-  && cp ply builder-tools/* /addon-builder \
+  && cp ply builder-tools/* /k8s-addon-builder \
   && ls -alhs /workspace/go/bin \
   && ls -alhs /workspace/go/pkg \
   && ls -alhs /workspace/go/src \
   && ls -alhs \
   # Install Python tools.
-  && pip install -r /addon-builder/requirements.txt \
+  && pip install -r /k8s-addon-builder/requirements.txt \
   && git config --system credential.helper gcloud.sh \
   && wget -qO- https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar zxv -C /builder \
   && CLOUDSDK_PYTHON="python2.7" /builder/google-cloud-sdk/install.sh \
