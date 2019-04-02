@@ -16,7 +16,7 @@
 
 # Standalone script to extract files from a Docker image.
 # Does not require the image to have a shell.
-# Meant for extracting a source bundle and LICENSE file.
+# Meant for extracting a source bundle and optionally other files.
 
 set -o nounset
 set -o pipefail
@@ -26,7 +26,7 @@ set -o errexit
 image=''
 output_dir="$(pwd)"
 clobber='false'
-files=('source.tar.xz' 'LICENSE')
+files=('source.tar.xz')
 
 # Usage
 function short_usage() {
@@ -34,7 +34,7 @@ function short_usage() {
 }
 function usage() {
 cat <<EOF
-Extract source bundle and LICENSE file from a Docker image.
+Extract source bundle, optionally other files, from a Docker image.
 
 $(short_usage)
   -h                      Print usage.
