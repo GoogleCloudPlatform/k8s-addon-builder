@@ -32,6 +32,7 @@ RUN \
   wget \
   python-pip \
   python-yaml \
+  unzip \
   # Install ply (Golang).
   && go get -v github.com/golang/dep/cmd/dep \
   && dep ensure \
@@ -44,6 +45,9 @@ RUN \
   # Install Python tools.
   && pip install -r /k8s-addon-builder/requirements.txt \
   && git config --system credential.helper gcloud.sh \
+  && wget -q -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protoc-3.7.1-linux-x86_64.zip \
+  && unzip -p protoc.zip bin/protoc > /usr/local/bin/protoc \
+  && chmod +x /usr/local/bin/protoc \
   && wget -qO- https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar zxv -C /builder \
   && CLOUDSDK_PYTHON="python2.7" /builder/google-cloud-sdk/install.sh \
     --usage-reporting=false \
