@@ -2,6 +2,17 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:0809e91ddc432ecee8d1657050cd166d86311e8fd2c6fce4e9f036f68b97e71d"
+  name = "github.com/GoogleCloudPlatform/k8s-addon-builder"
+  packages = [
+    "cmd",
+    "pkg",
+  ]
+  pruneopts = "UT"
+  revision = "070f9f8ae07418471760af753187c132911f4cb6"
+
+[[projects]]
   digest = "1:f9ae348e1f793dcf9ed930ed47136a67343dbd6809c5c91391322267f4476892"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -307,6 +318,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/GoogleCloudPlatform/k8s-addon-builder/cmd",
+    "github.com/GoogleCloudPlatform/k8s-addon-builder/pkg",
     "github.com/docker/distribution/reference",
     "github.com/docker/docker/api/types",
     "github.com/docker/docker/client",

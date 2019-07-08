@@ -25,7 +25,7 @@ fi
 # shellcheck disable=SC2178
 subs="--substitutions=$(IFS=, eval 'echo "${subs[*]}"')"
 
-gcloud container builds submit \
+gcloud builds submit \
   "${subs:-}" \
   --config k8s-addon-builder.cloudbuild.yaml \
   .

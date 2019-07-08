@@ -26,22 +26,16 @@ RUN \
   # Install common build tools.
   apt-get update \
   && apt-get install -y --no-install-recommends \
-  build-essential \
-  git \
-  make \
-  wget \
-  python-pip \
-  python-yaml \
-  unzip \
+    build-essential \
+    git \
+    make \
+    wget \
+    python-pip \
+    python-yaml \
+    unzip \
   # Install ply (Golang).
-  && go get -v github.com/golang/dep/cmd/dep \
-  && dep ensure \
   && make build-static \
   && cp ply builder-tools/* /k8s-addon-builder \
-  && ls -alhs /workspace/go/bin \
-  && ls -alhs /workspace/go/pkg \
-  && ls -alhs /workspace/go/src \
-  && ls -alhs \
   # Install Python tools.
   && pip install -r /k8s-addon-builder/requirements.txt \
   && git config --system credential.helper gcloud.sh \
