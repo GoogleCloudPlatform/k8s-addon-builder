@@ -8,15 +8,23 @@ ARG GOROOT=/usr/local/go
 ENV GOPATH ${GOPATH}
 ENV GOROOT ${GOROOT}
 
+# Need to install go packages in something other than /workspace/ because
+# that gets overwritten by GCB, but the GOPATH needs to be /workspace/go
+# because many addons expect artifacts of `go get/build/install/etc.` to
+# persist across stages.
+ARG INSTALL_GOPATH='/builder/go'
+ENV INSTALL_GOPATH ${INSTALL_GOPATH}
+
 RUN mkdir -pv \
   /k8s-addon-builder \
   /builder \
-  "${GOPATH}"
+  "${GOPATH}" \
+  "${INSTALL_GOPATH}"
 
 # Inject Golang.
 COPY --from=go $GOROOT $GOROOT
 
-ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:${PATH}"
 
 # Compile "ply" binary statically.
 WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder
@@ -29,12 +37,13 @@ RUN \
     build-essential \
     git \
     make \
+    jq \
     wget \
     python-pip \
     python-yaml \
     unzip \
   # Install dep, which is needed by some addons.
-  && go get -v -u github.com/golang/dep/cmd/dep \
+  && (GOPATH="${INSTALL_GOPATH}"; go get -v -u github.com/golang/dep/cmd/dep) \
   # Install ply (Golang).
   && make build-static \
   && cp ply builder-tools/* /k8s-addon-builder \
@@ -51,7 +60,6 @@ RUN \
     --disable-installation-options \
   # Clean up.
   && rm -rf \
-    /workspace/go/src \
     /var/lib/apt/lists/* \
     ~/.config/gcloud
 
