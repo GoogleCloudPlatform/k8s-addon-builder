@@ -33,6 +33,8 @@ RUN \
     python-pip \
     python-yaml \
     unzip \
+  # Install dep, which is needed by some addons.
+  && go get -v -u github.com/golang/dep/cmd/dep \
   # Install ply (Golang).
   && make build-static \
   && cp ply builder-tools/* /k8s-addon-builder \
