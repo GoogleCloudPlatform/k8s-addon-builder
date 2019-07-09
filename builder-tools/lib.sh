@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o xtrace
 
 # Print docker images that match a regex.
 find_images()
@@ -145,6 +148,9 @@ set_registry()
     else
       image_new="${push_registry}/${image}"
     fi
+    if [[ "${image}" == "${image_new}" ]]; then
+      continue
+    fi
     # Give the image a new name.
     docker tag "${image}" "${image_new}"
     # Remove the old image (so that only the new image name remains).
@@ -152,63 +158,91 @@ set_registry()
   done
 }
 
-# Get the tag of a full image, but do not treat "latest" as a tag.
-get_docker_tag()
+get_docker_tags()
 {
-  tag=$(echo "$1" | awk -F: '{print $2}')
-  if [[ "${tag}" != "latest" ]]; then
-    echo "${tag}"
-  fi
+  local auth
+  local token
+
+  local domain
+  local img_path_and_tag
+  local img_path
+
+  token="$1"
+
+  auth="Authorization: Bearer ${token}"
+
+  domain="${2%%/*}"
+  img_path_and_tag="${2#*/}"
+  img_path="${img_path_and_tag%:*}"
+
+  # Get docker tags.
+  curl -v -fs -H "$auth" "https://${domain}/v2/${img_path}/tags/list" | jq -r '."tags"[]'
 }
 
-# Get everything except the tag (if any).
-get_registry_and_name()
+mk_next_tag_suffix_version()
 {
-  tag=$(echo "$1" | awk -F: '{print $1}')
-  echo "${tag}"
-}
+  local token
+  local full_image_name
+  local tag_suffix_regex
 
-# For all images that match REGEX, either SET a tag or APPEND a suffix to it. If
-# the TAG starts with a "-", "_", or ".", treat it as a suffix; otherwise just
-# SET it. Abort if the resulting tag would exceed 128 characters.
-set_docker_tag()
-{
-  if (( $# != 2 )); then
-    echo >&2 "usage: set_docker_tag TAG REGEX"
-    return 1
+  local domain
+  local img_path_and_tag
+  local img_path
+
+  token="${1}"
+  full_image_name="${2}"
+
+  if [[ ! "${full_image_name}" =~ .+:.+$ ]]; then
+    echo >&2 "image name must have a tag"
+    exit 1
   fi
-  local desired_tag=$1
-  local regex=$2
-  local append=0
-  local images_found
-  local append
-  local existing_tag
-  local new_tag
-  if [[ "${desired_tag}" =~ ^[-_.] ]]; then
-    append=1
-  fi
-  images_found=$(find_images "${regex}")
-  for image in $images_found; do
-    existing_tag=$(get_docker_tag image)
-    if [[ -n "${existing_tag}" ]]; then
-      if ((append)); then
-        # Append the existing tag.
-        new_tag="${existing_tag}${desired_tag}"
-      else
-        # Overwrite existing tag.
-        new_tag="${desired_tag}"
-      fi
-    else # No tag exists (i.e., it is ":latest").
-      if ((append)); then
-        echo >&2 "cannot append tag ${desired_tag} to image ${image} (tag must start with a letter or number)"
-        return 1
-      else
-        new_tag="${desired_tag}"
+  tag_suffix_regex="${3}"
+  domain="${2%%/*}"
+  img_path_and_tag="${2#*/}"
+  img_path="${img_path_and_tag%:*}"
+  shift
+  shift
+
+  local remote_tags
+  remote_tags="$(get_docker_tags "${token}" "${full_image_name}")"
+
+  local remote_tag_suffix_version
+  local tag_suffix_versions_found=()
+  local next_tag_suffix_version=0
+
+  local remote_image
+  for remote_tag in ${remote_tags}; do
+    remote_image="${domain}/${img_path}:${remote_tag}"
+    local_image_regex="${full_image_name}${tag_suffix_regex}"
+    if echo "${remote_image}" | grep -Fq -- "${local_image_regex}"; then
+      remote_tag_suffix_version="${remote_image#"$local_image_regex"}"
+      # Populate tag_suffix_versions_found with actual version numbers.
+      if [[ "${remote_tag_suffix_version}" =~ ^[0-9]+$ ]]; then
+        tag_suffix_versions_found+=("${remote_tag_suffix_version}")
       fi
     fi
+  done
 
-    registry_and_name="$(get_registry_and_name "${image}")"
-    docker tag "${image}" "${registry_and_name}:${new_tag}"
+  # Find the max version (if any) and bump it.
+  if (( ${#tag_suffix_versions_found[@]} )); then
+    local max
+    max=$(printf "%s\n" "${tag_suffix_versions_found[@]}" | sort -nr | head -n1)
+    next_tag_suffix_version=$((max+1))
+  fi
+
+  echo "${next_tag_suffix_version}"
+}
+
+set_docker_tag_unique()
+{
+  local token="${1}"
+  local pushRegex="${2}"
+  local tag_suffix="${3}"
+  images_found=$(find_images "${pushRegex}")
+  # Handle each image on a case-by-case basis.
+  for image in ${images_found}; do
+    ver=$(mk_next_tag_suffix_version "${token}" "${image}" "${tag_suffix}")
+    docker tag "${image}" "${image}${tag_suffix}${ver}"
     docker rmi "${image}"
   done
 }
