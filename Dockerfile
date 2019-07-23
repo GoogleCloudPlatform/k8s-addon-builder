@@ -58,6 +58,10 @@ RUN \
     --usage-reporting=false \
     --bash-completion=false \
     --disable-installation-options \
+  # Upgrade all packages that are coming from the base
+  # gcr.io/cloud-builders/docker image.
+  && apt-get upgrade -y \
+  && apt-get dist-upgrade \
   # Clean up.
   && rm -rf \
     /var/lib/apt/lists/* \
