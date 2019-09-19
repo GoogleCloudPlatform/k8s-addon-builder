@@ -53,6 +53,7 @@ RUN \
   && wget -q -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protoc-3.7.1-linux-x86_64.zip \
   && unzip -p protoc.zip bin/protoc > /usr/local/bin/protoc \
   && chmod +x /usr/local/bin/protoc \
+  && unzip -o protoc.zip -d /usr/local include/* \
   && wget -qO- https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar zxv -C /builder \
   && CLOUDSDK_PYTHON="python2.7" /builder/google-cloud-sdk/install.sh \
     --usage-reporting=false \
