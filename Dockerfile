@@ -59,6 +59,9 @@ RUN \
     --usage-reporting=false \
     --bash-completion=false \
     --disable-installation-options \
+  # preload ko, golang kubernetes builder
+  && GO111MODULE=on \
+     go get github.com/google/ko/cmd/ko \
   # Upgrade all packages that are coming from the base
   # gcr.io/cloud-builders/docker image.
   && apt-get upgrade -y \
