@@ -1,2 +1,2 @@
-GitPython==2.1.9
+GitPython
 requests>=2.20.0
