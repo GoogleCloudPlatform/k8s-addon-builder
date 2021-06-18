@@ -1,4 +1,4 @@
-ARG GO_IMAGE=golang:1.15
+ARG GO_IMAGE=golang:1.16
 FROM $GO_IMAGE as go
 
 FROM launcher.gcr.io/google/ubuntu1804
