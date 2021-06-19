@@ -30,6 +30,3 @@ test:
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_PATH_PLY)
-deps:
-	$(GOGET) github.com/golang/dep/cmd/dep
-	dep ensure
