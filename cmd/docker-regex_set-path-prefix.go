@@ -49,7 +49,7 @@ func setRegistryWrapper(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dcli, err := client.NewEnvClient()
+	dcli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return err
 	}

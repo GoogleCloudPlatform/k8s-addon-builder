@@ -42,7 +42,7 @@ func EditTagSuffixWrapper(cmd *cobra.Command, args []string, appendOrRemove bool
 		return err
 	}
 
-	dcli, err := client.NewEnvClient()
+	dcli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return err
 	}
