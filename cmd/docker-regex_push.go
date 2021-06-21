@@ -36,7 +36,7 @@ func init() {
 func pushWrapper(cmd *cobra.Command, args []string) error {
 	r, err := abd.MakeRegex(args[0])
 
-	dcli, err := client.NewEnvClient()
+	dcli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return err
 	}

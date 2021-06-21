@@ -1,5 +1,6 @@
-ARG GO_IMAGE=golang:1.16
-FROM $GO_IMAGE as go
+ARG GO_IMAGE
+ARG GO_VERSION
+FROM ${GO_IMAGE}:${GO_VERSION} as go
 
 FROM launcher.gcr.io/google/ubuntu1804
 
@@ -43,10 +44,6 @@ COPY --from=go $GOROOT $GOROOT
 
 ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:${PATH}"
 
-# Compile "ply" binary statically.
-WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder
-COPY / ./
-
 RUN \
   # Install common build tools.
   apt-get update \
@@ -59,14 +56,12 @@ RUN \
     python-setuptools \
     python-pip \
     python-yaml \
-    unzip \
-  # Install dep, which is needed by some addons.
-  && (GOPATH="${INSTALL_GOPATH}"; go get -v -u github.com/golang/dep/cmd/dep) \
-  # Install ply (Golang).
-  && make build-static \
-  && cp ply builder-tools/* /k8s-addon-builder \
+    unzip
+
+COPY ./builder-tools/requirements.txt /k8s-addon-builder/requirements.txt
+RUN \
   # Install Python tools.
-  && pip install wheel \
+  pip install wheel \
   && pip install -r /k8s-addon-builder/requirements.txt \
   && git config --system credential.helper gcloud.sh \
   && wget -q -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protoc-3.7.1-linux-x86_64.zip \
@@ -77,15 +72,28 @@ RUN \
   && CLOUDSDK_PYTHON="python2.7" /builder/google-cloud-sdk/install.sh \
     --usage-reporting=false \
     --bash-completion=false \
-    --disable-installation-options \
+    --disable-installation-options
+
+# Compile "ply" binary statically.
+WORKDIR /workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder
+COPY / ./
+ARG KO_VERSION
+ARG PLY_VERSION_GIT
+ARG PLY_VERSION_DATE
+ENV PLY_VERSION_GIT ${PLY_VERSION_GIT}
+ENV PLY_VERSION_DATE ${PLY_VERSION_DATE}
+RUN \
+  # Install ply (Golang).
+  make build-static \
+  && cp ply /k8s-addon-builder \
   # preload ko, golang kubernetes builder
-  && go get github.com/google/ko \
-  # Upgrade all packages that are coming from the base
-  # gcr.io/cloud-builders/docker image.
-  && apt-get upgrade -y \
-  && apt-get dist-upgrade \
+  && curl -L https://github.com/google/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_Linux_x86_64.tar.gz | tar xzf - ko \
+  && chmod +x ./ko \
+  && mv ko /bin
+
+RUN \
   # Clean up.
-  && rm -rf \
+  rm -rf \
     /var/lib/apt/lists/* \
     ~/.config/gcloud
 
