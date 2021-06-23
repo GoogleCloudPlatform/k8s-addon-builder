@@ -10,21 +10,6 @@ It also ships with a command line utility called "ply" that can help with some c
 
 ## Building
 
-The k8s-addon-builder image is based on gcr.io/cloud-builders/docker, but also
-packages in a Golang compiler. To build the k8s-addon-builder with the Golang
-compiler from gcr.io/cloud-builders/go:debian, run
-
-```
-./build-in-gcb.sh
-```
-
-To build with a different version of Go (instead of the one in
-gcr.io/cloud-builders/go:debian), do
-
-
-```
-_GO_IMAGE=golang:1.9-stretch ./build-in-gcb.sh
-```
-
-The above works because gcr.io/cloud-builders/go:debian uses the official golang
-Docker image as a base image.
+Use the included [`build.sh` script](./build.sh). This script uses environment variables to
+adjust the build parameters. If the environment variables are not defined, it
+uses default values. See [the script](./build.sh) for more details.
