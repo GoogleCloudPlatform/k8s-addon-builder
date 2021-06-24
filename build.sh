@@ -19,6 +19,10 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
+# Build the addon-builder container. This script uses several environment
+# variables (see uses of set_var() below) if they exist; otherwise, default
+# values are used.
+
 # set_var takes 2 arguments:
 #
 #   1) the name of the variable to create and use in this script, and
@@ -32,6 +36,7 @@ set_var() {
     export "${1}"="${!1:-$2}"
 }
 
+# Set default values.
 set_var REGISTRY "gcr.io/gke-release-staging"
 set_var GO_IMAGE "golang"
 set_var GO_VERSION "1.16"
