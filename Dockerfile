@@ -42,7 +42,7 @@ RUN mkdir -pv \
 # Inject Golang.
 COPY --from=go $GOROOT $GOROOT
 
-ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:${PATH}"
+ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:/workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder/builder-tools:${PATH}"
 
 RUN \
   # Install common build tools.
