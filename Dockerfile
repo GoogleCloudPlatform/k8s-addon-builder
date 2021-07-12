@@ -92,6 +92,10 @@ RUN \
   && mv ko /bin
 
 RUN \
+  # Copy over builder-tools scripts to /k8s-addon-builder.
+  cp builder-tools/* /k8s-addon-builder
+
+RUN \
   # Clean up.
   rm -rf \
     /var/lib/apt/lists/* \
