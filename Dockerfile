@@ -101,5 +101,10 @@ RUN \
     /var/lib/apt/lists/* \
     ~/.config/gcloud
 
+# Reset PWD to be something other than /workspace/... because it will get
+# overridden to an empty volume when this image is invoked from Google Cloud
+# Build (GCB).
+WORKDIR /k8s-addon-builder
+
 # Parent image's entrypoint is docker, reset it to minimize confusion.
 ENTRYPOINT []
