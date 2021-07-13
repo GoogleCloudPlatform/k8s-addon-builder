@@ -42,7 +42,7 @@ RUN mkdir -pv \
 # Inject Golang.
 COPY --from=go $GOROOT $GOROOT
 
-ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:/workspace/go/src/github.com/GoogleCloudPlatform/k8s-addon-builder/builder-tools:${PATH}"
+ENV PATH="/k8s-addon-builder:/builder/google-cloud-sdk/bin:${GOROOT}/bin:${GOPATH}/bin:${INSTALL_GOPATH}/bin:${PATH}"
 
 RUN \
   # Install common build tools.
@@ -90,6 +90,10 @@ RUN \
   && curl -L https://github.com/google/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_Linux_x86_64.tar.gz | tar xzf - ko \
   && chmod +x ./ko \
   && mv ko /bin
+
+RUN \
+  # Copy over builder-tools scripts to /k8s-addon-builder.
+  cp builder-tools/* /k8s-addon-builder
 
 RUN \
   # Clean up.
