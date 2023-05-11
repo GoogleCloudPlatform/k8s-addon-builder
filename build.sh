@@ -39,7 +39,7 @@ set_var() {
 # Set default values.
 set_var REGISTRY "gcr.io/gke-release-staging"
 set_var GO_IMAGE "golang"
-set_var GO_VERSION "1.16"
+set_var GO_VERSION "1.19"
 set_var KO_VERSION "0.8.3"
 set_var PLY_VERSION_GIT "$(git describe --always --dirty --long)"
 set_var PLY_VERSION_DATE "$(date -u +%Y-%m-%dT%I:%M:%S%z)"
