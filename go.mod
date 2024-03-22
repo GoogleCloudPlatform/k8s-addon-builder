@@ -11,5 +11,5 @@ require (
 	github.com/moby/term v0.0.0-20210610120745-9d4ed1856297 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/spf13/cobra v1.1.3
-	gopkg.in/src-d/go-git.v4 v4.13.1
+	github.com/go-git/go-git/v5 v5.11.0
 )
