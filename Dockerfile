@@ -2,7 +2,7 @@ ARG GO_IMAGE
 ARG GO_VERSION
 FROM ${GO_IMAGE}:${GO_VERSION} as go
 
-FROM launcher.gcr.io/google/ubuntu2004
+FROM launcher.gcr.io/google/ubuntu2404
 
 RUN apt-get -y update && \
     apt-get -y install \
